@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#12302B">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Empréstimos">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<title>Empréstimos</title>
+<style>
+:root {
+  --bg: #EDF1F0;
+  --surface: #FFFFFF;
+  --ink: #12302B;
+  --muted: #5B706B;
+  --line: #D5DEDB;
+  --brand: #12302B;
+  --brand-ink: #FFFFFF;
+  --juros: #A8690A;
+  --ok: #257A4A;
+  --ok-bg: #DDF0E5;
+  --late: #B3372E;
+  --late-bg: #F8E1DE;
+  --soon: #8A5A00;
+  --soon-bg: #FBEFD2;
+  --focus: #1C6E8C;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E1917; --surface: #162623; --ink: #E4EEEB; --muted: #93A9A3; --line: #27403B;
+    --brand: #E4EEEB; --brand-ink: #0E1917; --juros: #E3A94B; --ok: #6CCB94; --ok-bg: #173627;
+    --late: #F08C82; --late-bg: #3C1E1B; --soon: #E3B75E; --soon-bg: #372C10; --focus: #6FC3E0;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E1917; --surface: #162623; --ink: #E4EEEB; --muted: #93A9A3; --line: #27403B;
+  --brand: #E4EEEB; --brand-ink: #0E1917; --juros: #E3A94B; --ok: #6CCB94; --ok-bg: #173627;
+  --late: #F08C82; --late-bg: #3C1E1B; --soon: #E3B75E; --soon-bg: #372C10; --focus: #6FC3E0;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: -apple-system, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.45;
+  -webkit-text-size-adjust: 100%;
+}
+.wrap { max-width: 720px; margin: 0 auto; padding: calc(16px + env(safe-area-inset-top)) 16px calc(64px + env(safe-area-inset-bottom)); }
+.num { font-variant-numeric: tabular-nums; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+/* Resumo */
+.hero {
+  background: var(--brand);
+  color: var(--brand-ink);
+  border-radius: 20px;
+  padding: 22px 20px 18px;
+  margin-bottom: 16px;
+}
+.hero .label { font-size: 15px; opacity: .8; }
+.hero .big { font-size: clamp(38px, 11vw, 56px); font-weight: 700; letter-spacing: -0.02em; line-height: 1.05; margin: 4px 0 16px; }
+.hero .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; border-top: 1px solid color-mix(in srgb, var(--brand-ink) 25%, transparent); padding-top: 14px; }
+.hero .k { font-size: 13px; opacity: .75; }
+.hero .v { font-size: 17px; font-weight: 500; }
+
+/* Formulário */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px; margin-bottom: 16px; }
+.card h2 { font-size: 19px; margin: 0 0 14px; font-weight: 700; }
+.fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.field.full { grid-column: 1 / -1; }
+label { font-size: 14px; color: var(--muted); }
+input[type="text"], input[type="date"], input[type="password"] {
+  width: 100%; min-width: 0;
+  font: inherit; color: var(--ink);
+  background: var(--bg);
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  padding: 11px 12px;
+  min-height: 46px;
+}
+input:focus-visible { outline-offset: 0; border-color: var(--focus); }
+.preview {
+  grid-column: 1 / -1;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  background: var(--bg); border-radius: 12px; padding: 12px 14px;
+}
+.preview .k { font-size: 13px; color: var(--muted); }
+.preview .v { font-size: 20px; font-weight: 700; }
+.preview .v.j { color: var(--juros); }
+.actions { grid-column: 1 / -1; display: flex; gap: 10px; }
+button {
+  font: inherit; cursor: pointer; border-radius: 10px; min-height: 46px; padding: 0 16px;
+  border: 1.5px solid var(--line); background: var(--surface); color: var(--ink);
+}
+button.primary { background: var(--brand); color: var(--brand-ink); border-color: var(--brand); font-weight: 700; flex: 1; }
+button.small { min-height: 38px; padding: 0 12px; font-size: 14px; }
+button.ok { background: var(--ok); color: #fff; border-color: var(--ok); font-weight: 500; }
+button.danger { color: var(--late); border-color: var(--late); }
+.err { grid-column: 1 / -1; color: var(--late); font-size: 14px; min-height: 0; }
+
+/* Importar comprovante */
+.import { grid-column: 1 / -1; border: 1.5px dashed var(--line); border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.import[hidden] { display: none; }
+.import .txt { flex: 1; min-width: 160px; font-size: 14px; color: var(--muted); }
+.import .txt b { color: var(--ink); font-weight: 700; display: block; font-size: 15px; }
+.import .st { width: 100%; font-size: 14px; }
+.import .st.busy { color: var(--muted); }
+.import .st.good { color: var(--ok); }
+.import .st.bad { color: var(--late); }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Configurações */
+details.cfg { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 4px 18px; margin-top: 22px; }
+details.cfg summary { cursor: pointer; padding: 14px 0; font-weight: 700; font-size: 17px; }
+details.cfg .blk { padding: 4px 0 16px; border-top: 1px solid var(--line); }
+details.cfg h3 { font-size: 16px; margin: 14px 0 4px; }
+details.cfg p { font-size: 14px; color: var(--muted); margin: 0 0 10px; }
+.row2 { display: flex; gap: 10px; flex-wrap: wrap; }
+.cfgst { font-size: 14px; margin-top: 8px; min-height: 20px; }
+.cfgst.good { color: var(--ok); } .cfgst.bad { color: var(--late); }
+
+/* Lista */
+.listhead { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 22px 2px 10px; flex-wrap: wrap; }
+.listhead h2 { font-size: 19px; margin: 0; }
+.tabs { display: inline-flex; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+.tabs button { border: 0; background: transparent; min-height: 34px; padding: 0 14px; border-radius: 999px; font-size: 14px; color: var(--muted); }
+.tabs button[aria-pressed="true"] { background: var(--brand); color: var(--brand-ink); }
+
+.loan { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; margin-bottom: 10px; }
+.loan.paid { opacity: .78; }
+.top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.name { font-size: 18px; font-weight: 700; overflow-wrap: anywhere; }
+.dates { font-size: 14px; color: var(--muted); margin-top: 2px; }
+.total { text-align: right; flex-shrink: 0; }
+.total .v { font-size: 22px; font-weight: 700; line-height: 1.1; }
+.total .k { font-size: 13px; color: var(--muted); }
+.break { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; font-size: 14px; color: var(--muted); }
+.break b { color: var(--ink); font-weight: 500; }
+.break .j { color: var(--juros); font-weight: 700; }
+.pill { display: inline-block; font-size: 13px; font-weight: 500; padding: 3px 10px; border-radius: 999px; }
+.pill.late { background: var(--late-bg); color: var(--late); }
+.pill.soon { background: var(--soon-bg); color: var(--soon); }
+.pill.done { background: var(--ok-bg); color: var(--ok); }
+.pill.wait { background: var(--bg); color: var(--muted); }
+.rowact { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.empty { text-align: center; color: var(--muted); padding: 28px 12px; border: 1.5px dashed var(--line); border-radius: 16px; }
+.foot { text-align: center; color: var(--muted); font-size: 13px; margin-top: 18px; }
+
+@media (max-width: 420px) {
+  .fields { grid-template-columns: 1fr; }
+  .hero .grid { grid-template-columns: 1fr 1fr; }
+  .hero .grid > :last-child { grid-column: 1 / -1; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <section class="hero" aria-label="Resumo">
+    <div class="label">Ainda tenho para receber</div>
+    <div class="big num" id="sPend">R$ 0,00</div>
+    <div class="grid">
+      <div><div class="k">Emprestado (em aberto)</div><div class="v num" id="sCap">R$ 0,00</div></div>
+      <div><div class="k">Juros a receber</div><div class="v num" id="sJur">R$ 0,00</div></div>
+      <div><div class="k">Já recebido</div><div class="v num" id="sRec">R$ 0,00</div></div>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="fTitle">
+    <h2 id="fTitle">Novo empréstimo</h2>
+    <div class="fields">
+      <div class="import" id="importBox">
+        <div class="txt"><b>Importar comprovante</b>Envie o PDF (ou uma foto) e o formulário é preenchido sozinho.</div>
+        <button type="button" id="btnImport" class="small">Escolher arquivo</button>
+        <input type="file" id="fileImport" class="visually-hidden" accept="application/pdf,.pdf,image/jpeg,image/png,image/webp" tabindex="-1" aria-label="Arquivo do comprovante">
+        <div class="st" id="importSt" role="status" aria-live="polite"></div>
+      </div>
+      <div class="field full">
+        <label for="fNome">Nome</label>
+        <input type="text" id="fNome" autocomplete="off" placeholder="Quem pegou o dinheiro">
+      </div>
+      <div class="field">
+        <label for="fValor">Valor emprestado (R$)</label>
+        <input type="text" id="fValor" inputmode="decimal" autocomplete="off" placeholder="1.000,00">
+      </div>
+      <div class="field">
+        <label for="fPct">Juros (%)</label>
+        <input type="text" id="fPct" inputmode="decimal" autocomplete="off" value="15">
+      </div>
+      <div class="field">
+        <label for="fData">Data do empréstimo</label>
+        <input type="date" id="fData">
+      </div>
+      <div class="field">
+        <label for="fVenc">Data para receber</label>
+        <input type="date" id="fVenc">
+      </div>
+      <div class="preview" aria-live="polite">
+        <div><div class="k">Valor dos juros</div><div class="v j num" id="pJur">R$ 0,00</div></div>
+        <div><div class="k">Total a receber</div><div class="v num" id="pTot">R$ 0,00</div></div>
+      </div>
+      <div class="err" id="fErr" role="alert"></div>
+      <div class="actions">
+        <button class="primary" id="btnSalvar" type="button">Salvar empréstimo</button>
+        <button id="btnCancelar" type="button" hidden>Cancelar</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="listhead">
+    <h2>Empréstimos</h2>
+    <div class="tabs" role="group" aria-label="Filtro">
+      <button type="button" data-f="abertos" aria-pressed="true">A receber</button>
+      <button type="button" data-f="pagos" aria-pressed="false">Recebidos</button>
+      <button type="button" data-f="todos" aria-pressed="false">Todos</button>
+    </div>
+  </div>
+  <div id="lista"></div>
+  <details class="cfg">
+    <summary>Configurações e backup</summary>
+    <div class="blk">
+      <h3>Backup dos dados</h3>
+      <p>Seus empréstimos ficam só neste iPhone. Baixe um backup de vez em quando e guarde no Arquivos ou iCloud.</p>
+      <div class="row2">
+        <button type="button" class="small" id="btnBackup">Baixar backup</button>
+        <button type="button" class="small" id="btnRestore">Restaurar backup</button>
+        <input type="file" id="fileRestore" class="visually-hidden" accept="application/json,.json" tabindex="-1" aria-label="Arquivo de backup">
+      </div>
+      <div class="cfgst" id="bkSt" role="status"></div>
+      <h3>Leitura de comprovante com IA (opcional)</h3>
+      <p>Sem chave, o app lê comprovantes em PDF direto no aparelho. Com a chave da API do Claude, ele também lê fotos/prints e PDFs escaneados, e erra menos. A chave fica só neste iPhone.</p>
+      <div class="field">
+        <label for="fKey">Chave da API (começa com sk-ant-)</label>
+        <input type="password" id="fKey" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="sk-ant-...">
+      </div>
+      <div class="row2" style="margin-top:10px">
+        <button type="button" class="small" id="btnKeySave">Salvar chave</button>
+        <button type="button" class="small danger" id="btnKeyDel">Remover chave</button>
+      </div>
+      <div class="cfgst" id="keySt" role="status"></div>
+    </div>
+  </details>
+  <div class="foot" id="storeInfo"></div>
+</div>
+
+<script src="pdf.min.js"></script>
+<script>
+(function () {
+  "use strict";
+  var LS_KEY = "emprestimos_v1";
+  var loans = [];
+  var filtro = "abertos";
+  var editId = null;
+  var venceTocado = false;
+  var apagarId = null;
+  var store = { mode: "local", col: null };
+
+  var $ = function (id) { return document.getElementById(id); };
+  var brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+  function money(n) { return brl.format(n || 0); }
+  function round2(n) { return Math.round((n + Number.EPSILON) * 100) / 100; }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+
+  function parseNum(s) {
+    s = String(s || "").trim().replace(/[^\d.,-]/g, "");
+    if (!s) return NaN;
+    if (s.indexOf(",") > -1) s = s.replace(/\./g, "").replace(",", ".");
+    else if ((s.match(/\./g) || []).length > 1) s = s.replace(/\./g, "");
+    return parseFloat(s);
+  }
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function isoDate(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  function fromIso(s) { var p = s.split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
+  function fmtDate(s) { if (!s) return ""; var p = s.split("-"); return p[2] + "/" + p[1] + "/" + p[0]; }
+  function today() { var d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+  function addDays(iso, n) { var d = fromIso(iso); d.setDate(d.getDate() + n); return isoDate(d); }
+  function diffDays(iso) { return Math.round((fromIso(iso) - today()) / 86400000); }
+
+  function calc(l) {
+    var jur = round2(l.valor * (l.pct / 100));
+    return { juros: jur, total: round2(l.valor + jur) };
+  }
+
+  /* ---------- Armazenamento ---------- */
+  var KEY_API = "emprestimos_apikey";
+  function cacheSave() {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(loans)); }
+    catch (e) { $("storeInfo").textContent = "Não consegui salvar neste aparelho. Baixe um backup agora."; }
+  }
+  function cacheLoad() {
+    try { var r = localStorage.getItem(LS_KEY); if (r) loans = JSON.parse(r) || []; } catch (e) { loans = []; }
+  }
+  function persist(l) {
+    var i = loans.findIndex(function (x) { return x.id === l.id; });
+    if (i > -1) loans[i] = l; else loans.push(l);
+    cacheSave(); render();
+  }
+  function remove(id) { loans = loans.filter(function (x) { return x.id !== id; }); cacheSave(); render(); }
+  function info() { $("storeInfo").textContent = "Seus dados ficam salvos neste iPhone. Baixe um backup de vez em quando."; }
+  function newId() { return "e" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+  function getKey() { try { return localStorage.getItem(KEY_API) || ""; } catch (e) { return ""; } }
+
+  /* ---------- Formulário ---------- */
+  function livePreview() {
+    var v = parseNum($("fValor").value), p = parseNum($("fPct").value);
+    if (isNaN(v) || isNaN(p)) { $("pJur").textContent = money(0); $("pTot").textContent = money(0); return; }
+    var c = calc({ valor: v, pct: p });
+    $("pJur").textContent = money(c.juros); $("pTot").textContent = money(c.total);
+  }
+  function resetForm() {
+    editId = null; venceTocado = false;
+    $("fNome").value = ""; $("fValor").value = ""; $("fPct").value = "15";
+    var t = isoDate(today());
+    $("fData").value = t; $("fVenc").value = addDays(t, 30);
+    $("fErr").textContent = ""; $("fTitle").textContent = "Novo empréstimo";
+    $("btnSalvar").textContent = "Salvar empréstimo"; $("btnCancelar").hidden = true;
+    livePreview();
+  }
+  function salvar() {
+    var nome = $("fNome").value.trim();
+    var valor = parseNum($("fValor").value);
+    var pct = parseNum($("fPct").value);
+    var data = $("fData").value, venc = $("fVenc").value;
+    var err = "";
+    if (!nome) err = "Informe o nome.";
+    else if (isNaN(valor) || valor <= 0) err = "Informe o valor emprestado.";
+    else if (isNaN(pct) || pct < 0) err = "Informe o percentual de juros.";
+    else if (!data) err = "Informe a data do empréstimo.";
+    else if (!venc) err = "Informe a data para receber.";
+    else if (venc < data) err = "A data para receber não pode ser antes do empréstimo.";
+    $("fErr").textContent = err;
+    if (err) return;
+    var old = editId ? loans.find(function (x) { return x.id === editId; }) : null;
+    persist({
+      id: editId || newId(), nome: nome, valor: round2(valor), pct: pct,
+      data: data, venc: venc,
+      pago: old ? !!old.pago : false, dataPago: old ? (old.dataPago || "") : ""
+    });
+    resetForm();
+  }
+  function editar(id) {
+    var l = loans.find(function (x) { return x.id === id; }); if (!l) return;
+    editId = id; venceTocado = true;
+    $("fNome").value = l.nome;
+    $("fValor").value = String(l.valor).replace(".", ",");
+    $("fPct").value = String(l.pct).replace(".", ",");
+    $("fData").value = l.data; $("fVenc").value = l.venc;
+    $("fTitle").textContent = "Editar empréstimo";
+    $("btnSalvar").textContent = "Salvar alterações"; $("btnCancelar").hidden = false;
+    $("fErr").textContent = ""; livePreview();
+    $("fTitle").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  /* ---------- Renderização ---------- */
+  function statusPill(l) {
+    if (l.pago) return '<span class="pill done">Recebido' + (l.dataPago ? " em " + fmtDate(l.dataPago) : "") + "</span>";
+    var d = diffDays(l.venc);
+    if (d < 0) return '<span class="pill late">Atrasado há ' + (-d) + (d === -1 ? " dia" : " dias") + "</span>";
+    if (d === 0) return '<span class="pill soon">Vence hoje</span>';
+    if (d <= 7) return '<span class="pill soon">Vence em ' + d + (d === 1 ? " dia" : " dias") + "</span>";
+    return '<span class="pill wait">Vence em ' + d + " dias</span>";
+  }
+  function render() {
+    var pend = 0, cap = 0, jur = 0, rec = 0;
+    loans.forEach(function (l) {
+      var c = calc(l);
+      if (l.pago) rec += c.total; else { pend += c.total; cap += l.valor; jur += c.juros; }
+    });
+    $("sPend").textContent = money(pend); $("sCap").textContent = money(cap);
+    $("sJur").textContent = money(jur); $("sRec").textContent = money(rec);
+
+    var list = loans.filter(function (l) {
+      return filtro === "todos" || (filtro === "abertos" ? !l.pago : l.pago);
+    }).sort(function (a, b) {
+      if (a.pago !== b.pago) return a.pago ? 1 : -1;
+      return a.pago ? (b.dataPago || "").localeCompare(a.dataPago || "") : a.venc.localeCompare(b.venc);
+    });
+
+    var box = $("lista");
+    if (!list.length) {
+      box.innerHTML = '<div class="empty">' + (loans.length
+        ? "Nenhum empréstimo nesta lista."
+        : "Nenhum empréstimo ainda. Preencha o formulário acima e toque em Salvar.") + "</div>";
+      return;
+    }
+    box.innerHTML = list.map(function (l) {
+      var c = calc(l);
+      var confirmar = apagarId === l.id;
+      return '<article class="loan' + (l.pago ? " paid" : "") + '" data-id="' + esc(l.id) + '">' +
+        '<div class="top"><div><div class="name">' + esc(l.nome) + "</div>" +
+        '<div class="dates">Emprestado em ' + fmtDate(l.data) + " · receber em " + fmtDate(l.venc) + "</div></div>" +
+        '<div class="total"><div class="v num">' + money(c.total) + '</div><div class="k">total a receber</div></div></div>' +
+        '<div class="break num"><span><b>' + money(l.valor) + '</b> emprestado</span><span>+</span>' +
+        '<span class="j">' + money(c.juros) + '</span><span>de juros (' + String(l.pct).replace(".", ",") + "%)</span></div>" +
+        '<div class="break">' + statusPill(l) + "</div>" +
+        '<div class="rowact">' +
+        (l.pago
+          ? '<button class="small" data-a="desfazer" type="button">Desfazer recebimento</button>'
+          : '<button class="small ok" data-a="pagar" type="button">Marcar como recebido</button>') +
+        '<button class="small" data-a="editar" type="button">Editar</button>' +
+        (confirmar
+          ? '<button class="small danger" data-a="apagar-sim" type="button">Confirmar exclusão</button><button class="small" data-a="apagar-nao" type="button">Cancelar</button>'
+          : '<button class="small danger" data-a="apagar" type="button">Apagar</button>') +
+        "</div></article>";
+    }).join("");
+  }
+
+  /* ---------- Eventos ---------- */
+  $("btnSalvar").addEventListener("click", salvar);
+  $("btnCancelar").addEventListener("click", resetForm);
+  ["fValor", "fPct"].forEach(function (id) { $(id).addEventListener("input", livePreview); });
+  $("fVenc").addEventListener("input", function () { venceTocado = true; });
+  $("fData").addEventListener("input", function () {
+    if (!venceTocado && $("fData").value) $("fVenc").value = addDays($("fData").value, 30);
+  });
+  document.querySelectorAll(".tabs button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      filtro = b.getAttribute("data-f");
+      document.querySelectorAll(".tabs button").forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+      apagarId = null; render();
+    });
+  });
+  $("lista").addEventListener("click", function (e) {
+    var btn = e.target.closest("button[data-a]"); if (!btn) return;
+    var card = btn.closest(".loan"); var id = card.getAttribute("data-id");
+    var l = loans.find(function (x) { return x.id === id; }); if (!l) return;
+    var a = btn.getAttribute("data-a");
+    if (a === "pagar") { l = Object.assign({}, l, { pago: true, dataPago: isoDate(today()) }); persist(l); }
+    else if (a === "desfazer") { l = Object.assign({}, l, { pago: false, dataPago: "" }); persist(l); }
+    else if (a === "editar") editar(id);
+    else if (a === "apagar") { apagarId = id; render(); }
+    else if (a === "apagar-nao") { apagarId = null; render(); }
+    else if (a === "apagar-sim") { apagarId = null; remove(id); }
+  });
+
+  /* ---------- Importar comprovante ---------- */
+  function setSt(msg, cls) { var e = $("importSt"); e.textContent = msg; e.className = "st " + (cls || ""); }
+
+  function pdfText(file) {
+    if (!window.pdfjsLib) return Promise.reject(new Error("pdfjs"));
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "pdf.worker.min.js";
+    return file.arrayBuffer().then(function (buf) {
+      return pdfjsLib.getDocument({ data: buf }).promise;
+    }).then(function (pdf) {
+      var n = Math.min(pdf.numPages, 3), out = [], chain = Promise.resolve();
+      for (var i = 1; i <= n; i++) (function (i) {
+        chain = chain.then(function () { return pdf.getPage(i); }).then(function (pg) { return pg.getTextContent(); })
+          .then(function (tc) { out.push(tc.items.map(function (it) { return it.str + (it.hasEOL ? "\n" : " "); }).join("")); });
+      })(i);
+      return chain.then(function () { return out.join("\n").trim(); });
+    });
+  }
+
+  var MESES = { jan: 1, fev: 2, mar: 3, abr: 4, mai: 5, jun: 6, jul: 7, ago: 8, set: 9, out: 10, nov: 11, dez: 12 };
+  function titulo(n) {
+    n = n.replace(/\s+/g, " ").trim();
+    if (n === n.toUpperCase()) n = n.toLowerCase().replace(/(^|\s)([a-zà-ú])/g, function (m, a, b) { return a + b.toUpperCase(); }).replace(/\b(Da|De|Do|Das|Dos|E)\b/g, function (m) { return m.toLowerCase(); });
+    return n;
+  }
+  function parseComprovante(text) {
+    var out = { recebedor: null, valor: null, data: null };
+    var t = text.replace(/\u00a0/g, " ");
+    var m = t.match(/valor(?:\s+(?:da\s+)?(?:transfer[eê]ncia|pix|pago|transferido|enviado))?\s*:?\s*(?:R\s?\$)?\s*(\d{1,3}(?:\.\d{3})*,\d{2})/i) ||
+            t.match(/R\s?\$\s*(\d{1,3}(?:\.\d{3})*,\d{2})/i);
+    if (m) out.valor = parseNum(m[1]);
+    var d = t.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+    if (d) out.data = d[3] + "-" + d[2] + "-" + d[1];
+    else {
+      d = t.match(/(\d{1,2})\s+(?:de\s+)?(jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)[a-zç]*\.?\s+(?:de\s+)?(\d{4})/i);
+      if (d) out.data = d[3] + "-" + pad(MESES[d[2].toLowerCase()]) + "-" + pad(+d[1]);
+    }
+    var lines = t.split(/\n+/).map(function (x) { return x.replace(/\s+/g, " ").trim(); }).filter(Boolean);
+    var head = /^(destino|favorecido|recebedor|destinat[aá]rio|quem recebeu|dados de quem recebeu|para)\b/i;
+    var skip = /^(cpf|cnpj|institui|ag[eê]ncia|conta|chave|tipo|banco|nome do banco|ispb|documento|cpf\/cnpj|\*{2,})/i;
+    for (var i = 0; i < lines.length && !out.recebedor; i++) {
+      if (!head.test(lines[i])) continue;
+      var same = lines[i].match(/^(?:destino|favorecido|recebedor|destinat[aá]rio|quem recebeu|para)\s*:?\s+([A-Za-zÀ-ú' .-]{5,})$/i);
+      if (same && /\s/.test(same[1].trim()) && !/^(nome|dados|conta|institui)/i.test(same[1])) { out.recebedor = titulo(same[1]); break; }
+      for (var j = i + 1; j < Math.min(i + 9, lines.length); j++) {
+        var ln = lines[j];
+        var nm = ln.match(/^nome(?:\s+do\s+(?:recebedor|favorecido|destinat[aá]rio))?\s*:?\s*(.*)$/i);
+        if (nm) {
+          var v = nm[1] || lines[j + 1] || "";
+          if (v && !skip.test(v)) { out.recebedor = titulo(v); }
+          break;
+        }
+        if (!skip.test(ln) && /^[A-Za-zÀ-ú' .-]{5,}$/.test(ln) && /\s/.test(ln) && !head.test(ln) && !/^(origem|valor|data|pix|transfer)/i.test(ln)) { out.recebedor = titulo(ln); break; }
+      }
+    }
+    return out;
+  }
+
+  var PROMPT = function () {
+    return "Você lê comprovantes de transferência/Pix brasileiros. Quem me enviou o comprovante é a pessoa que EMPRESTOU o dinheiro (o pagador/origem). " +
+      "Extraia: nome de quem RECEBEU o dinheiro (destino/favorecido), nome de quem enviou (origem), valor em reais (número, ponto decimal) e a data da transferência no formato AAAA-MM-DD. " +
+      "Hoje é " + isoDate(today()) + " (use o ano atual se o ano não aparecer). " +
+      "Responda SOMENTE com JSON no formato {\"recebedor\":\"...\",\"pagador\":\"...\",\"valor\":1500.5,\"data\":\"2026-09-18\"}. Use null no que não achar.";
+  };
+  function toB64(file) {
+    return new Promise(function (res, rej) {
+      var r = new FileReader();
+      r.onload = function () { res(String(r.result).split(",")[1]); };
+      r.onerror = function () { rej(new Error("leitura")); };
+      r.readAsDataURL(file);
+    });
+  }
+  function aiExtract(file, isPdf) {
+    var key = getKey();
+    return toB64(file).then(function (b64) {
+      var mt = isPdf ? "application/pdf" : (file.type || "image/jpeg");
+      var block = isPdf
+        ? { type: "document", source: { type: "base64", media_type: "application/pdf", data: b64 } }
+        : { type: "image", source: { type: "base64", media_type: mt, data: b64 } };
+      return fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true"
+        },
+        body: JSON.stringify({ model: "claude-haiku-4-5-20251001", max_tokens: 400, messages: [{ role: "user", content: [block, { type: "text", text: PROMPT() }] }] })
+      });
+    }).then(function (r) {
+      if (r.status === 401) throw { code: "chave" };
+      if (!r.ok) throw { code: "api" };
+      return r.json();
+    }).then(function (j) {
+      var tx = (j.content || []).map(function (c) { return c.text || ""; }).join("").replace(/```json|```/g, "").trim();
+      var a = tx.indexOf("{"), b = tx.lastIndexOf("}");
+      return JSON.parse(tx.slice(a, b + 1));
+    });
+  }
+
+  function aplicar(d, origem) {
+    var valor = typeof d.valor === "number" ? d.valor : parseNum(d.valor);
+    resetForm();
+    if (d.recebedor) $("fNome").value = String(d.recebedor).trim();
+    if (!isNaN(valor) && valor > 0) $("fValor").value = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(valor);
+    if (d.data && /^\d{4}-\d{2}-\d{2}$/.test(d.data)) { $("fData").value = d.data; $("fVenc").value = addDays(d.data, 30); }
+    livePreview();
+    var faltou = [];
+    if (!$("fNome").value) faltou.push("nome");
+    if (!$("fValor").value) faltou.push("valor");
+    if (faltou.length) setSt("Preenchi o que consegui ler. Faltou: " + faltou.join(" e ") + ". Complete e confira.", "bad");
+    else setSt("Comprovante lido. Confira os dados, ajuste juros e data de receber se precisar e toque em Salvar.", "good");
+    $("fNome").scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+  function importar(file) {
+    if (!file) return;
+    var isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+    var key = getKey();
+    if (!isPdf && !key) { setSt("Para ler foto ou print, cadastre a chave da API em Configurações. Ou envie o PDF do comprovante.", "bad"); $("fileImport").value = ""; return; }
+    setSt("Lendo comprovante…", "busy"); $("btnImport").disabled = true;
+    var local = function () {
+      return pdfText(file).then(function (tx) {
+        if (tx.length < 30) throw { code: "sem_texto" };
+        return parseComprovante(tx);
+      });
+    };
+    var job = key ? aiExtract(file, isPdf).catch(function (e) {
+      if (e && e.code === "chave") throw e;
+      if (isPdf) return local();
+      throw e;
+    }) : local();
+    job.then(function (d) { aplicar(d || {}); })
+      .catch(function (e) {
+        var c = e && e.code, m;
+        if (c === "chave") m = "A chave da API foi recusada. Confira em Configurações.";
+        else if (c === "sem_texto") m = "Esse PDF não tem texto legível. Cadastre a chave da API em Configurações ou preencha à mão.";
+        else if (e && e.message === "pdfjs") m = "Não consegui abrir o PDF. Preencha à mão.";
+        else m = "Não consegui ler esse comprovante. Tente outro arquivo ou preencha à mão.";
+        setSt(m, "bad");
+      })
+      .then(function () { $("btnImport").disabled = false; $("fileImport").value = ""; });
+  }
+  $("btnImport").addEventListener("click", function () { $("fileImport").click(); });
+  $("fileImport").addEventListener("change", function () { importar(this.files && this.files[0]); });
+
+  /* ---------- Configurações ---------- */
+  function keyInfo() { $("keySt").textContent = getKey() ? "Chave cadastrada." : ""; $("keySt").className = "cfgst good"; if (!getKey()) $("keySt").textContent = ""; }
+  $("btnKeySave").addEventListener("click", function () {
+    var k = $("fKey").value.trim();
+    if (!/^sk-ant-/.test(k)) { $("keySt").textContent = "A chave deve começar com sk-ant-."; $("keySt").className = "cfgst bad"; return; }
+    try { localStorage.setItem(KEY_API, k); } catch (e) {}
+    $("fKey").value = ""; keyInfo();
+  });
+  $("btnKeyDel").addEventListener("click", function () { try { localStorage.removeItem(KEY_API); } catch (e) {} $("keySt").textContent = "Chave removida."; $("keySt").className = "cfgst good"; });
+  function bkMsg(m, c) { $("bkSt").textContent = m; $("bkSt").className = "cfgst " + (c || ""); }
+  $("btnBackup").addEventListener("click", function () {
+    var name = "backup-emprestimos-" + isoDate(today()) + ".json";
+    var blob = new Blob([JSON.stringify({ versao: 1, emprestimos: loans }, null, 2)], { type: "application/json" });
+    var f = null; try { f = new File([blob], name, { type: "application/json" }); } catch (e) {}
+    if (f && navigator.canShare && navigator.canShare({ files: [f] })) {
+      navigator.share({ files: [f], title: name }).then(function () { bkMsg("Backup pronto.", "good"); }).catch(function () {});
+    } else {
+      var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name;
+      document.body.appendChild(a); a.click(); a.remove(); bkMsg("Backup baixado.", "good");
+    }
+  });
+  $("btnRestore").addEventListener("click", function () { $("fileRestore").click(); });
+  $("fileRestore").addEventListener("change", function () {
+    var f = this.files && this.files[0]; if (!f) return;
+    var self = this;
+    f.text().then(function (tx) {
+      var j = JSON.parse(tx), arr = Array.isArray(j) ? j : j.emprestimos;
+      if (!Array.isArray(arr)) throw new Error("formato");
+      var n = 0;
+      arr.forEach(function (l) {
+        if (!l || !l.id || !l.nome || typeof l.valor !== "number" || typeof l.pct !== "number" || !l.data || !l.venc) return;
+        var i = loans.findIndex(function (x) { return x.id === l.id; });
+        if (i > -1) loans[i] = l; else loans.push(l);
+        n++;
+      });
+      cacheSave(); render(); bkMsg(n + " empréstimo(s) restaurado(s).", "good");
+    }).catch(function () { bkMsg("Esse arquivo não é um backup válido.", "bad"); })
+      .then(function () { self.value = ""; });
+  });
+
+  if ("serviceWorker" in navigator) window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {});
+
+  cacheLoad(); resetForm(); info(); render(); keyInfo();
+})();
+</script>
+</body>
+</html>
