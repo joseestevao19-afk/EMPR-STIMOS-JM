@@ -155,8 +155,8 @@ details.cfg p { font-size: 14px; color: var(--muted); margin: 0 0 10px; }
 /* Lista */
 .listhead { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 22px 2px 10px; flex-wrap: wrap; }
 .listhead h2 { font-size: 19px; margin: 0; }
-.tabs { display: inline-flex; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
-.tabs button { border: 0; background: transparent; min-height: 34px; padding: 0 14px; border-radius: 999px; font-size: 14px; color: var(--muted); }
+.tabs { display: flex; width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+.tabs button { flex: 1; border: 0; background: transparent; min-height: 34px; padding: 0 6px; border-radius: 999px; font-size: 13px; color: var(--muted); white-space: nowrap; }
 .tabs button[aria-pressed="true"] { background: var(--brand); color: var(--brand-ink); }
 
 .loan { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; margin-bottom: 10px; }
@@ -175,6 +175,16 @@ details.cfg p { font-size: 14px; color: var(--muted); margin: 0 0 10px; }
 .pill.soon { background: var(--soon-bg); color: var(--soon); }
 .pill.done { background: var(--ok-bg); color: var(--ok); }
 .pill.wait { background: var(--bg); color: var(--muted); }
+.contact { font-size: 14px; color: var(--muted); margin-top: 2px; overflow-wrap: anywhere; }
+a.btn { display: inline-flex; align-items: center; text-decoration: none; font: inherit; font-size: 14px; cursor: pointer; border-radius: 10px; min-height: 38px; padding: 0 12px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); }
+a.btn.zap { border-color: var(--ok); color: var(--ok); }
+#alerta:empty { display: none; }
+#alerta { margin-bottom: 16px; }
+.alerta { display: block; width: 100%; text-align: left; border-radius: 16px; padding: 14px 16px; border: 1.5px solid; font: inherit; line-height: 1.4; }
+.alerta.late { background: var(--late-bg); color: var(--late); border-color: var(--late); }
+.alerta.soon { background: var(--soon-bg); color: var(--soon); border-color: var(--soon); }
+.alerta b { display: block; font-size: 17px; }
+.alerta span { display: block; font-size: 14px; }
 .rowact { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
 .empty { text-align: center; color: var(--muted); padding: 28px 12px; border: 1.5px dashed var(--line); border-radius: 16px; }
 .foot { text-align: center; color: var(--muted); font-size: 13px; margin-top: 18px; }
@@ -208,6 +218,8 @@ details.cfg p { font-size: 14px; color: var(--muted); margin: 0 0 10px; }
     </div>
   </section>
 
+  <div id="alerta" role="status"></div>
+
   <section class="card" aria-labelledby="fTitle">
     <h2 id="fTitle">Novo empréstimo</h2>
     <div class="fields">
@@ -220,6 +232,14 @@ details.cfg p { font-size: 14px; color: var(--muted); margin: 0 0 10px; }
       <div class="field full">
         <label for="fNome">Nome</label>
         <input type="text" id="fNome" autocomplete="off" placeholder="Quem pegou o dinheiro">
+      </div>
+      <div class="field">
+        <label for="fTel">Telefone / WhatsApp</label>
+        <input type="text" id="fTel" inputmode="tel" autocomplete="off" placeholder="(68) 99999-9999">
+      </div>
+      <div class="field">
+        <label for="fCpf">CPF</label>
+        <input type="text" id="fCpf" inputmode="numeric" autocomplete="off" placeholder="000.000.000-00">
       </div>
       <div class="field">
         <label for="fValor">Valor emprestado (R$)</label>
@@ -253,6 +273,7 @@ details.cfg p { font-size: 14px; color: var(--muted); margin: 0 0 10px; }
     <h2>Empréstimos</h2>
     <div class="tabs" role="group" aria-label="Filtro">
       <button type="button" data-f="abertos" aria-pressed="true">A receber</button>
+      <button type="button" data-f="vencidos" aria-pressed="false">Vencidos</button>
       <button type="button" data-f="pagos" aria-pressed="false">Recebidos</button>
       <button type="button" data-f="todos" aria-pressed="false">Todos</button>
     </div>
@@ -356,9 +377,32 @@ details.cfg p { font-size: 14px; color: var(--muted); margin: 0 0 10px; }
     var c = calc({ valor: v, pct: p });
     $("pJur").textContent = money(c.juros); $("pTot").textContent = money(c.total);
   }
+  function onlyDigits(v) { return String(v || "").replace(/\D/g, ""); }
+  function maskCpf(v) {
+    var d = onlyDigits(v).slice(0, 11), o = d.slice(0, 3);
+    if (d.length > 3) o += "." + d.slice(3, 6);
+    if (d.length > 6) o += "." + d.slice(6, 9);
+    if (d.length > 9) o += "-" + d.slice(9, 11);
+    return o;
+  }
+  function maskTel(v) {
+    var d = onlyDigits(v).slice(0, 11);
+    if (d.length <= 2) return d ? "(" + d : "";
+    var o = "(" + d.slice(0, 2) + ") ";
+    return o + (d.length > 10 ? d.slice(2, 7) + "-" + d.slice(7) : d.slice(2, 6) + (d.length > 6 ? "-" + d.slice(6) : ""));
+  }
+  function cpfOk(c) {
+    c = onlyDigits(c);
+    if (c.length !== 11 || /^(\d)\1{10}$/.test(c)) return false;
+    for (var t = 9; t < 11; t++) {
+      var sum = 0; for (var i = 0; i < t; i++) sum += +c[i] * (t + 1 - i);
+      if (((sum * 10) % 11) % 10 !== +c[t]) return false;
+    }
+    return true;
+  }
   function resetForm() {
     editId = null; venceTocado = false;
-    $("fNome").value = ""; $("fValor").value = ""; $("fPct").value = "15";
+    $("fNome").value = ""; $("fTel").value = ""; $("fCpf").value = ""; $("fValor").value = ""; $("fPct").value = "15";
     var t = isoDate(today());
     $("fData").value = t; $("fVenc").value = addDays(t, 30);
     $("fErr").textContent = ""; $("fTitle").textContent = "Novo empréstimo";
@@ -370,8 +414,11 @@ details.cfg p { font-size: 14px; color: var(--muted); margin: 0 0 10px; }
     var valor = parseNum($("fValor").value);
     var pct = parseNum($("fPct").value);
     var data = $("fData").value, venc = $("fVenc").value;
+    var tel = onlyDigits($("fTel").value), cpf = onlyDigits($("fCpf").value);
     var err = "";
     if (!nome) err = "Informe o nome.";
+    else if (tel && tel.length < 10) err = "O telefone precisa do DDD e do número.";
+    else if (cpf && !cpfOk(cpf)) err = "CPF inválido. Confira os números ou deixe em branco.";
     else if (isNaN(valor) || valor <= 0) err = "Informe o valor emprestado.";
     else if (isNaN(pct) || pct < 0) err = "Informe o percentual de juros.";
     else if (!data) err = "Informe a data do empréstimo.";
@@ -381,7 +428,7 @@ details.cfg p { font-size: 14px; color: var(--muted); margin: 0 0 10px; }
     if (err) return;
     var old = editId ? loans.find(function (x) { return x.id === editId; }) : null;
     persist({
-      id: editId || newId(), nome: nome, valor: round2(valor), pct: pct,
+      id: editId || newId(), nome: nome, tel: tel, cpf: cpf, valor: round2(valor), pct: pct,
       data: data, venc: venc,
       pago: old ? !!old.pago : false, dataPago: old ? (old.dataPago || "") : ""
     });
@@ -391,6 +438,7 @@ details.cfg p { font-size: 14px; color: var(--muted); margin: 0 0 10px; }
     var l = loans.find(function (x) { return x.id === id; }); if (!l) return;
     editId = id; venceTocado = true;
     $("fNome").value = l.nome;
+    $("fTel").value = maskTel(l.tel); $("fCpf").value = maskCpf(l.cpf);
     $("fValor").value = String(l.valor).replace(".", ",");
     $("fPct").value = String(l.pct).replace(".", ",");
     $("fData").value = l.data; $("fVenc").value = l.venc;
@@ -398,6 +446,59 @@ details.cfg p { font-size: 14px; color: var(--muted); margin: 0 0 10px; }
     $("btnSalvar").textContent = "Salvar alterações"; $("btnCancelar").hidden = false;
     $("fErr").textContent = ""; livePreview();
     $("fTitle").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  /* ---------- Contato, avisos e lembrete ---------- */
+  function zapLink(l) {
+    var d = onlyDigits(l.tel);
+    if (d.length <= 11) d = "55" + d;
+    var d0 = diffDays(l.venc), c = calc(l);
+    var nome = String(l.nome).trim().split(/\s+/)[0];
+    var msg = "Olá, " + nome + "! Tudo bem? Passando para lembrar do pagamento de " + money(c.total).replace(/\u00a0/g, " ") +
+      (d0 < 0 ? ", que venceu em " : ", combinado para ") + fmtDate(l.venc) + ". " +
+      (d0 < 0 ? "Pode me confirmar quando consegue acertar?" : "Qualquer dúvida, me avise.");
+    return "https://wa.me/" + d + "?text=" + encodeURIComponent(msg);
+  }
+  function renderAlerta(venc) {
+    var box = $("alerta");
+    var hoje = loans.filter(function (l) { return !l.pago && diffDays(l.venc) === 0; });
+    var prox = loans.filter(function (l) { var d = diffDays(l.venc); return !l.pago && d > 0 && d <= 3; });
+    var html = "";
+    if (venc.length) {
+      var tot = 0; venc.forEach(function (l) { tot += calc(l).total; });
+      var nomes = venc.slice().sort(function (a, b) { return a.venc.localeCompare(b.venc); }).slice(0, 3).map(function (l) {
+        var d = -diffDays(l.venc); return esc(l.nome) + " (" + d + (d === 1 ? " dia" : " dias") + ")";
+      }).join(", ") + (venc.length > 3 ? " e mais " + (venc.length - 3) : "");
+      html = '<button type="button" class="alerta late" data-go="vencidos"><b>' + venc.length + (venc.length === 1 ? " empréstimo vencido" : " empréstimos vencidos") +
+        " · " + money(tot) + "</b><span>" + nomes + "</span><span>Toque para ver a lista.</span></button>";
+    } else if (hoje.length || prox.length) {
+      var partes = [];
+      if (hoje.length) partes.push("Vence hoje: " + hoje.map(function (l) { return esc(l.nome); }).join(", "));
+      if (prox.length) partes.push("Nos próximos 3 dias: " + prox.map(function (l) { return esc(l.nome); }).join(", "));
+      html = '<button type="button" class="alerta soon" data-go="abertos"><b>Atenção aos prazos</b><span>' + partes.join(" · ") + "</span></button>";
+    }
+    box.innerHTML = html;
+  }
+  function icsEsc(t) { return String(t).replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n"); }
+  function baixarLembrete(l) {
+    var c = calc(l), d = l.venc.replace(/-/g, "");
+    var val = function (n) { return money(n).replace(/\u00a0/g, " "); };
+    var lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Emprestimos//PT", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "BEGIN:VEVENT",
+      "UID:" + l.id + "@emprestimos", "DTSTAMP:" + new Date().toISOString().replace(/[-:]|\.\d{3}/g, ""),
+      "DTSTART:" + d + "T090000", "DTEND:" + d + "T093000",
+      "SUMMARY:" + icsEsc("Receber " + val(c.total) + " de " + l.nome),
+      "DESCRIPTION:" + icsEsc("Emprestado " + val(l.valor) + " em " + fmtDate(l.data) + ", juros de " + String(l.pct).replace(".", ",") + "%."),
+      "BEGIN:VALARM", "TRIGGER:PT0M", "ACTION:DISPLAY", "DESCRIPTION:" + icsEsc("Vence hoje: " + l.nome), "END:VALARM", "END:VEVENT", "END:VCALENDAR"];
+    var name = "lembrete-" + l.nome.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + ".ics";
+    var blob = new Blob([lines.join("\r\n")], { type: "text/calendar" });
+    skipUntil = Date.now() + 180000;
+    var f = null; try { f = new File([blob], name, { type: "text/calendar" }); } catch (e) {}
+    if (f && navigator.canShare && navigator.canShare({ files: [f] })) {
+      navigator.share({ files: [f], title: name }).catch(function () {});
+    } else {
+      var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+    }
   }
 
   /* ---------- Renderização ---------- */
@@ -418,8 +519,16 @@ details.cfg p { font-size: 14px; color: var(--muted); margin: 0 0 10px; }
     $("sPend").textContent = money(pend); $("sCap").textContent = money(cap);
     $("sJur").textContent = money(jur); $("sRec").textContent = money(rec);
 
+    var venc = loans.filter(function (l) { return !l.pago && diffDays(l.venc) < 0; });
+    var tv = document.querySelector('.tabs [data-f="vencidos"]');
+    tv.textContent = "Vencidos" + (venc.length ? " (" + venc.length + ")" : "");
+    renderAlerta(venc);
+
     var list = loans.filter(function (l) {
-      return filtro === "todos" || (filtro === "abertos" ? !l.pago : l.pago);
+      if (filtro === "todos") return true;
+      if (filtro === "abertos") return !l.pago;
+      if (filtro === "vencidos") return !l.pago && diffDays(l.venc) < 0;
+      return l.pago;
     }).sort(function (a, b) {
       if (a.pago !== b.pago) return a.pago ? 1 : -1;
       return a.pago ? (b.dataPago || "").localeCompare(a.dataPago || "") : a.venc.localeCompare(b.venc);
@@ -428,7 +537,7 @@ details.cfg p { font-size: 14px; color: var(--muted); margin: 0 0 10px; }
     var box = $("lista");
     if (!list.length) {
       box.innerHTML = '<div class="empty">' + (loans.length
-        ? "Nenhum empréstimo nesta lista."
+        ? (filtro === "vencidos" ? "Nenhum empréstimo vencido. Tudo em dia." : "Nenhum empréstimo nesta lista.")
         : "Nenhum empréstimo ainda. Preencha o formulário acima e toque em Salvar.") + "</div>";
       return;
     }
@@ -437,15 +546,18 @@ details.cfg p { font-size: 14px; color: var(--muted); margin: 0 0 10px; }
       var confirmar = apagarId === l.id;
       return '<article class="loan' + (l.pago ? " paid" : "") + '" data-id="' + esc(l.id) + '">' +
         '<div class="top"><div><div class="name">' + esc(l.nome) + "</div>" +
-        '<div class="dates">Emprestado em ' + fmtDate(l.data) + " · receber em " + fmtDate(l.venc) + "</div></div>" +
+        '<div class="dates">Emprestado em ' + fmtDate(l.data) + " · receber em " + fmtDate(l.venc) + "</div>" +
+        ((l.tel || l.cpf) ? '<div class="contact">' + (l.tel ? "Tel: " + esc(maskTel(l.tel)) : "") + (l.tel && l.cpf ? " · " : "") + (l.cpf ? "CPF: " + esc(maskCpf(l.cpf)) : "") + "</div>" : "") + "</div>" +
         '<div class="total"><div class="v num">' + money(c.total) + '</div><div class="k">total a receber</div></div></div>' +
         '<div class="break num"><span><b>' + money(l.valor) + '</b> emprestado</span><span>+</span>' +
         '<span class="j">' + money(c.juros) + '</span><span>de juros (' + String(l.pct).replace(".", ",") + "%)</span></div>" +
         '<div class="break">' + statusPill(l) + "</div>" +
         '<div class="rowact">' +
+        (!l.pago && l.tel ? '<a class="btn" href="tel:' + esc(l.tel) + '">Ligar</a><a class="btn zap" target="_blank" rel="noopener" href="' + esc(zapLink(l)) + '">WhatsApp</a>' : "") +
         (l.pago
           ? '<button class="small" data-a="desfazer" type="button">Desfazer recebimento</button>'
           : '<button class="small ok" data-a="pagar" type="button">Marcar como recebido</button>') +
+        (!l.pago ? '<button class="small" data-a="lembrete" type="button">Lembrete no Calendário</button>' : "") +
         '<button class="small" data-a="editar" type="button">Editar</button>' +
         (confirmar
           ? '<button class="small danger" data-a="apagar-sim" type="button">Confirmar exclusão</button><button class="small" data-a="apagar-nao" type="button">Cancelar</button>'
@@ -456,6 +568,14 @@ details.cfg p { font-size: 14px; color: var(--muted); margin: 0 0 10px; }
 
   /* ---------- Eventos ---------- */
   $("btnSalvar").addEventListener("click", salvar);
+  $("fTel").addEventListener("input", function () { this.value = maskTel(this.value); });
+  $("fCpf").addEventListener("input", function () { this.value = maskCpf(this.value); });
+  $("alerta").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-go]"); if (!b) return;
+    var f = b.getAttribute("data-go"); filtro = f; apagarId = null;
+    document.querySelectorAll(".tabs button").forEach(function (x) { x.setAttribute("aria-pressed", x.getAttribute("data-f") === f ? "true" : "false"); });
+    render(); $("lista").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
   $("btnCancelar").addEventListener("click", resetForm);
   ["fValor", "fPct"].forEach(function (id) { $(id).addEventListener("input", livePreview); });
   $("fVenc").addEventListener("input", function () { venceTocado = true; });
@@ -477,6 +597,7 @@ details.cfg p { font-size: 14px; color: var(--muted); margin: 0 0 10px; }
     if (a === "pagar") { l = Object.assign({}, l, { pago: true, dataPago: isoDate(today()) }); persist(l); }
     else if (a === "desfazer") { l = Object.assign({}, l, { pago: false, dataPago: "" }); persist(l); }
     else if (a === "editar") editar(id);
+    else if (a === "lembrete") baixarLembrete(l);
     else if (a === "apagar") { apagarId = id; render(); }
     else if (a === "apagar-nao") { apagarId = null; render(); }
     else if (a === "apagar-sim") { apagarId = null; remove(id); }
