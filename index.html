@@ -142,6 +142,36 @@ body.locked .wrap { visibility: hidden; }
 #lock .link:focus-visible, .pad button:focus-visible { outline-color: currentColor; }
 @media (prefers-reduced-motion: reduce) { .dots.shake { animation: none; } }
 
+/* Relatório */
+.seg { display: flex; width: 100%; background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+.seg button { flex: 1; border: 0; background: transparent; min-height: 38px; padding: 0 8px; border-radius: 999px; font-size: 15px; color: var(--muted); white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--brand); color: var(--brand-ink); font-weight: 700; }
+.mainnav { margin-bottom: 16px; background: var(--surface); }
+.yearnav { display: flex; align-items: center; justify-content: space-between; margin: 14px 0 4px; }
+.yearnav strong { font-size: 20px; }
+.yearnav button { width: 46px; padding: 0; font-size: 22px; }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+.stat { background: var(--bg); border-radius: 12px; padding: 12px 14px; }
+.stat.main { grid-column: 1 / -1; }
+.stat .k { font-size: 13px; color: var(--muted); }
+.stat .v { font-size: 20px; font-weight: 700; }
+.stat.main .v { font-size: 30px; color: var(--ok); }
+.legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--muted); margin: 6px 0 12px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.dot { display: inline-block; width: 12px; height: 12px; border-radius: 4px; }
+.dot.r, .bar i.r { background: var(--ok); }
+.dot.p, .bar i.p { background: var(--juros); opacity: .6; }
+.rrow { padding: 12px 0; border-top: 1px solid var(--line); }
+.rrow.zero .rm, .rrow.zero .rv { color: var(--muted); font-weight: 400; }
+.rtop { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.rm { font-weight: 700; }
+.rm small { font-weight: 400; color: var(--muted); font-size: 13px; }
+.rv { font-size: 17px; font-weight: 700; }
+.bar { display: flex; height: 10px; border-radius: 5px; background: var(--bg); overflow: hidden; margin: 6px 0 4px; }
+.bar i { display: block; height: 100%; }
+.rsub { font-size: 13px; color: var(--muted); }
+.rnote { font-size: 13px; color: var(--muted); margin: 14px 0 0; }
+
 /* Configurações */
 details.cfg { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 4px 18px; margin-top: 22px; }
 details.cfg summary { cursor: pointer; padding: 14px 0; font-weight: 700; font-size: 17px; }
@@ -214,11 +244,18 @@ a.btn.zap { border-color: var(--ok); color: var(--ok); }
     <div class="grid">
       <div><div class="k">Emprestado (em aberto)</div><div class="v num" id="sCap">R$ 0,00</div></div>
       <div><div class="k">Juros a receber</div><div class="v num" id="sJur">R$ 0,00</div></div>
-      <div><div class="k">Já recebido</div><div class="v num" id="sRec">R$ 0,00</div></div>
+      <div><div class="k">Já recebido (com juros)</div><div class="v num" id="sRec">R$ 0,00</div></div>
     </div>
   </section>
 
   <div id="alerta" role="status"></div>
+
+  <div class="seg mainnav" id="mainNav" role="group" aria-label="Seção">
+    <button type="button" data-v="loans" aria-pressed="true">Empréstimos</button>
+    <button type="button" data-v="report" aria-pressed="false">Relatório</button>
+  </div>
+
+  <div id="viewLoans">
 
   <section class="card" aria-labelledby="fTitle">
     <h2 id="fTitle">Novo empréstimo</h2>
@@ -257,6 +294,10 @@ a.btn.zap { border-color: var(--ok); color: var(--ok); }
         <label for="fVenc">Data para receber</label>
         <input type="date" id="fVenc">
       </div>
+      <div class="field full" id="fRecWrap" hidden>
+        <label for="fRec">Data em que recebeu</label>
+        <input type="date" id="fRec">
+      </div>
       <div class="preview" aria-live="polite">
         <div><div class="k">Valor dos juros</div><div class="v j num" id="pJur">R$ 0,00</div></div>
         <div><div class="k">Total a receber</div><div class="v num" id="pTot">R$ 0,00</div></div>
@@ -279,6 +320,26 @@ a.btn.zap { border-color: var(--ok); color: var(--ok); }
     </div>
   </div>
   <div id="lista"></div>
+  </div>
+
+  <div id="viewReport" hidden>
+    <section class="card" aria-labelledby="rTitle">
+      <h2 id="rTitle">Relatório de juros</h2>
+      <div class="seg" id="rMode" role="group" aria-label="Período">
+        <button type="button" data-m="mensal" aria-pressed="true">Por mês</button>
+        <button type="button" data-m="anual" aria-pressed="false">Por ano</button>
+      </div>
+      <div class="yearnav" id="yearNav">
+        <button type="button" id="rPrev" aria-label="Ano anterior">‹</button>
+        <strong id="rYear"></strong>
+        <button type="button" id="rNext" aria-label="Próximo ano">›</button>
+      </div>
+      <div class="stats" id="rStats"></div>
+      <div class="legend"><span><i class="dot r"></i>Juros recebidos</span><span><i class="dot p"></i>Juros a receber</span></div>
+      <div id="rRows"></div>
+      <p class="rnote">Os juros contam no mês em que você marcou o empréstimo como recebido. Os que ainda estão em aberto entram no mês do vencimento, como previsão. Se você apagar um empréstimo, ele sai do relatório.</p>
+    </section>
+  </div>
   <details class="cfg">
     <summary>Configurações e backup</summary>
     <div class="blk">
@@ -405,7 +466,7 @@ a.btn.zap { border-color: var(--ok); color: var(--ok); }
     $("fNome").value = ""; $("fTel").value = ""; $("fCpf").value = ""; $("fValor").value = ""; $("fPct").value = "15";
     var t = isoDate(today());
     $("fData").value = t; $("fVenc").value = addDays(t, 30);
-    $("fErr").textContent = ""; $("fTitle").textContent = "Novo empréstimo";
+    $("fErr").textContent = ""; $("fTitle").textContent = "Novo empréstimo"; $("fRecWrap").hidden = true;
     $("btnSalvar").textContent = "Salvar empréstimo"; $("btnCancelar").hidden = true;
     livePreview();
   }
@@ -430,7 +491,8 @@ a.btn.zap { border-color: var(--ok); color: var(--ok); }
     persist({
       id: editId || newId(), nome: nome, tel: tel, cpf: cpf, valor: round2(valor), pct: pct,
       data: data, venc: venc,
-      pago: old ? !!old.pago : false, dataPago: old ? (old.dataPago || "") : ""
+      pago: old ? !!old.pago : false,
+      dataPago: old ? (old.pago && $("fRec").value ? $("fRec").value : (old.dataPago || "")) : ""
     });
     resetForm();
   }
@@ -442,6 +504,7 @@ a.btn.zap { border-color: var(--ok); color: var(--ok); }
     $("fValor").value = String(l.valor).replace(".", ",");
     $("fPct").value = String(l.pct).replace(".", ",");
     $("fData").value = l.data; $("fVenc").value = l.venc;
+    $("fRecWrap").hidden = !l.pago; $("fRec").value = l.pago ? (l.dataPago || l.venc) : "";
     $("fTitle").textContent = "Editar empréstimo";
     $("btnSalvar").textContent = "Salvar alterações"; $("btnCancelar").hidden = false;
     $("fErr").textContent = ""; livePreview();
@@ -501,6 +564,77 @@ a.btn.zap { border-color: var(--ok); color: var(--ok); }
     }
   }
 
+  /* ---------- Relatório ---------- */
+  var rYear = today().getFullYear(), rMode = "mensal";
+  var MESES_N = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+  function aggregate() {
+    var A = {};
+    var g = function (k) { return A[k] || (A[k] = { rj: 0, pj: 0, n: 0, emp: 0 }); };
+    loans.forEach(function (l) {
+      var c = calc(l);
+      g(l.data.slice(0, 7)).emp += l.valor;
+      if (l.pago) { var o = g((l.dataPago || l.venc).slice(0, 7)); o.rj += c.juros; o.n++; }
+      else g(l.venc.slice(0, 7)).pj += c.juros;
+    });
+    return A;
+  }
+  function sumKeys(A, test) {
+    var t = { rj: 0, pj: 0, n: 0, emp: 0 };
+    Object.keys(A).forEach(function (k) { if (test(k)) { t.rj += A[k].rj; t.pj += A[k].pj; t.n += A[k].n; t.emp += A[k].emp; } });
+    t.rj = round2(t.rj); t.pj = round2(t.pj); t.emp = round2(t.emp);
+    return t;
+  }
+  function rowHtml(label, o, max, extraSmall) {
+    var zero = !o.rj && !o.pj && !o.n && !o.emp;
+    var wr = max ? (o.rj / max * 100) : 0, wp = max ? (o.pj / max * 100) : 0;
+    var subs = [];
+    if (o.n) subs.push(o.n + (o.n === 1 ? " quitado" : " quitados"));
+    if (o.pj) subs.push("a receber " + money(round2(o.pj)));
+    if (o.emp) subs.push("emprestado " + money(round2(o.emp)));
+    return '<div class="rrow' + (zero ? " zero" : "") + '"><div class="rtop"><span class="rm">' + label + (extraSmall ? " <small>" + extraSmall + "</small>" : "") +
+      '</span><span class="rv num">' + money(round2(o.rj)) + '</span></div>' +
+      (zero ? "" : '<div class="bar" aria-hidden="true"><i class="r" style="width:' + wr.toFixed(1) + '%"></i><i class="p" style="width:' + wp.toFixed(1) + '%"></i></div>') +
+      (subs.length ? '<div class="rsub num">' + subs.join(" · ") + "</div>" : "") + "</div>";
+  }
+  function renderReport() {
+    var A = aggregate(), keys = Object.keys(A);
+    var nowKey = isoDate(today()).slice(0, 7);
+    var stats, rows = "";
+    $("yearNav").hidden = rMode !== "mensal";
+    if (rMode === "mensal") {
+      $("rYear").textContent = rYear;
+      var t = sumKeys(A, function (k) { return k.slice(0, 4) === String(rYear); });
+      stats = [["main", "Juros recebidos em " + rYear, money(t.rj)], ["", "Juros a receber (previsto)", money(t.pj)], ["", "Emprestado no ano", money(t.emp)]];
+      var max = 0, list = [];
+      for (var m = 1; m <= 12; m++) {
+        var k = rYear + "-" + pad(m), o = A[k] || { rj: 0, pj: 0, n: 0, emp: 0 };
+        list.push([k, m, o]); max = Math.max(max, o.rj + o.pj);
+      }
+      list.forEach(function (x) { rows += rowHtml(MESES_N[x[1] - 1], x[2], max, x[0] === nowKey ? "mês atual" : ""); });
+    } else {
+      var t2 = sumKeys(A, function () { return true; });
+      stats = [["main", "Juros recebidos (total)", money(t2.rj)], ["", "Juros a receber (previsto)", money(t2.pj)], ["", "Emprestado no total", money(t2.emp)]];
+      var ys = {}; ys[String(today().getFullYear())] = 1;
+      keys.forEach(function (k) { ys[k.slice(0, 4)] = 1; });
+      var years = Object.keys(ys).sort().reverse(), ymax = 0, yl = [];
+      years.forEach(function (y) {
+        var o = sumKeys(A, function (k) { return k.slice(0, 4) === y; }); yl.push([y, o]); ymax = Math.max(ymax, o.rj + o.pj);
+      });
+      yl.forEach(function (x) { rows += rowHtml(x[0], x[1], ymax, x[0] === String(today().getFullYear()) ? "ano atual" : ""); });
+    }
+    $("rStats").innerHTML = stats.map(function (s) {
+      return '<div class="stat ' + s[0] + '"><div class="k">' + s[1] + '</div><div class="v num">' + s[2] + "</div></div>";
+    }).join("");
+    $("rRows").innerHTML = rows;
+    document.querySelectorAll("#rMode button").forEach(function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-m") === rMode ? "true" : "false"); });
+  }
+  function showView(v) {
+    $("viewLoans").hidden = v !== "loans"; $("viewReport").hidden = v !== "report";
+    document.querySelectorAll("#mainNav button").forEach(function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-v") === v ? "true" : "false"); });
+    if (v === "report") renderReport();
+    window.scrollTo(0, 0);
+  }
+
   /* ---------- Renderização ---------- */
   function statusPill(l) {
     if (l.pago) return '<span class="pill done">Recebido' + (l.dataPago ? " em " + fmtDate(l.dataPago) : "") + "</span>";
@@ -523,6 +657,7 @@ a.btn.zap { border-color: var(--ok); color: var(--ok); }
     var tv = document.querySelector('.tabs [data-f="vencidos"]');
     tv.textContent = "Vencidos" + (venc.length ? " (" + venc.length + ")" : "");
     renderAlerta(venc);
+    if (!$("viewReport").hidden) renderReport();
 
     var list = loans.filter(function (l) {
       if (filtro === "todos") return true;
@@ -568,11 +703,15 @@ a.btn.zap { border-color: var(--ok); color: var(--ok); }
 
   /* ---------- Eventos ---------- */
   $("btnSalvar").addEventListener("click", salvar);
+  document.querySelectorAll("#mainNav button").forEach(function (b) { b.addEventListener("click", function () { showView(b.getAttribute("data-v")); }); });
+  document.querySelectorAll("#rMode button").forEach(function (b) { b.addEventListener("click", function () { rMode = b.getAttribute("data-m"); renderReport(); }); });
+  $("rPrev").addEventListener("click", function () { rYear--; renderReport(); });
+  $("rNext").addEventListener("click", function () { rYear++; renderReport(); });
   $("fTel").addEventListener("input", function () { this.value = maskTel(this.value); });
   $("fCpf").addEventListener("input", function () { this.value = maskCpf(this.value); });
   $("alerta").addEventListener("click", function (e) {
     var b = e.target.closest("button[data-go]"); if (!b) return;
-    var f = b.getAttribute("data-go"); filtro = f; apagarId = null;
+    var f = b.getAttribute("data-go"); filtro = f; apagarId = null; showView("loans");
     document.querySelectorAll(".tabs button").forEach(function (x) { x.setAttribute("aria-pressed", x.getAttribute("data-f") === f ? "true" : "false"); });
     render(); $("lista").scrollIntoView({ behavior: "smooth", block: "start" });
   });
